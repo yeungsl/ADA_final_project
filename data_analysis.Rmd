@@ -1,0 +1,76 @@
+---
+title: "R Notebook"
+author: "Sailung Yeung sy2823"
+date: "10/24/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load and clean data set
+
+Two datasets:
+ * Text data: Trump twitters (may need to be processd by python nlp)
+ * Quantitative data: Index price, 10-year bond price?? (why not yield), dow, nasdaq ... daily (5/9/1990 - 10/18/2019)
+
+```{r}
+market_data <- read.csv("./data/dataset._5291.csv")
+
+skimr::skim(market_data)
+```
+
+No missing values, check for duplicates.
+
+```{r}
+market_data[duplicated(market_data),]
+```
+
+No duplication, change the `Date` variable to datetime.
+
+```{r}
+library(tidyverse)
+cleaned_md <- market_data %>%
+  mutate(Date = as.Date(market_data$Date, format="%m/%d/%Y"))
+```
+
+Import sentiment data
+
+```{r}
+sentiment <- read.csv2("./data/sentiments.csv", sep = ",")
+
+colnames(sentiment) <- c("date", "neg", "neu", "pos", "compound")
+head(sentiment)
+```
+
+data cleaning remove the rows where __neg: 0.0, neu: 0.0, pos: 1.0, compound: 0.0__.
+
+```{r}
+library(tidyverse)
+skimr::skim(sentiment)
+cleand_sent <- sentiment %>%
+  mutate(compound = as.double(as.character(compound)),
+         neg = as.double(as.character(neg)),
+         neu = as.double(as.character(neu)),
+         pos = as.double(as.character(pos)),
+         date = as.Date(date)) %>%
+  filter(!(neg == 0 & neu == 0 & pos == 1 & compound == 0))
+```
+
+get the average compound score
+
+```{r}
+avg_senti <- cleand_sent %>%
+  group_by(date) %>%
+  summarise(avg_compound = mean(compound))
+```
+
+ and combine into the market_data
+ 
+```{r}
+cleaned_md %>%
+  filter(Date >= "2009")
+```
+
+ 
